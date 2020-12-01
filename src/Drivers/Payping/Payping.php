@@ -59,6 +59,162 @@ class Payping extends Driver
         return empty($this->invoice->getDetails()[$name]) ? null : $this->invoice->getDetails()[$name];
     }
 
+    private function createSingleRequest($data = array())
+    {
+        $data = [
+            'payerName' => 'bdok',
+            'amount'         => $data['amount'],
+            'payerIdentity' => $data['userName'],
+            'returnUrl'     => $data['returnUrl'],
+            'clientRefId' => $data['clientRefId'],
+            'description' => $data['description']
+        ];
+
+        $response = $this
+            ->client
+            ->request(
+                'POST',
+                'https://api.payping.ir/v1/pay',
+                [
+                    'json' => $data,
+                    "headers" => [
+                        "Accept" => "application/json",
+                        "Authorization" => sprintf('Bearer %s', $this->settings->accessToken),
+                    ],
+                    "http_errors" => false,
+                ]
+            );
+
+        $responseBody = mb_strtolower($response->getBody()->getContents());
+        $body = @json_decode($responseBody, true);
+        $statusCode = (int) $response->getStatusCode();
+
+        if ($statusCode !== 200) {
+            // some error has happened
+            $message = is_array($body) ? array_pop($body) : $this->convertStatusCodeToMessage($statusCode);
+
+            throw new PurchaseFailedException($message);
+        }
+
+        $minutes = now()->addSecond(60 * 5);
+        cache(['transactionId' => $body['code']], $minutes);
+
+        $this->invoice->transactionId($body['code']);
+
+        // return the transaction's id
+        return $this->invoice->getTransactionId();
+
+    }
+    private function verifyPayment($data = array())
+    {
+        $pAccessToken = $data['pAccessToken'];
+        $data = [
+            'refId' => $data['refid'],
+            'amount' => $data['orgAmount']
+        ];
+        $response = $this
+            ->client
+            ->request(
+                'POST',
+                'https://api.payping.ir/v1/pay/verify',
+                [
+                    'json' => $data,
+                    "headers" => [
+                        "Accept" => "application/json",
+                        "Authorization" => sprintf('Bearer %s', $pAccessToken),
+                    ],
+                    "http_errors" => false,
+                ]
+            );
+
+        $responseBody = mb_strtolower($response->getBody()->getContents());
+        $body = @json_decode($responseBody, true);
+        $statusCode = (int) $response->getStatusCode();
+
+        if ($statusCode != 200)
+            return 'err';
+
+        return $body;
+    }
+    private function createMultiRequest($data = array())
+    {
+        $data = [
+            'payerName' => 'bdok',
+            'pairs'         => $data['pairs'],
+            'returnUrl'     => $data['returnUrl'],
+            'clientRefId' => $data['clientRefId']
+        ];
+
+        $response = $this
+            ->client
+            ->request(
+                'POST',
+                'https://api.payping.ir/v1/pay',
+                [
+                    'json' => $data,
+                    "headers" => [
+                        "Accept" => "application/json",
+                        "Authorization" => sprintf('Bearer %s', $this->settings->accessToken),
+                    ],
+                    "http_errors" => false,
+                ]
+            );
+
+        $responseBody = mb_strtolower($response->getBody()->getContents());
+        $body = @json_decode($responseBody, true);
+        $statusCode = (int) $response->getStatusCode();
+
+        if ($statusCode !== 200) {
+            // some error has happened
+            $message = is_array($body) ? array_pop($body) : $this->convertStatusCodeToMessage($statusCode);
+
+            throw new PurchaseFailedException($message);
+        }
+
+        $minutes = now()->addSecond(60 * 5);
+        cache(['transactionId' => $body['code']], $minutes);
+
+        $this->invoice->transactionId($body['code']);
+
+        // return the transaction's id
+        return $this->invoice->getTransactionId();
+    }
+    private function getClientUserProfile($data = array())
+    {
+        $response = $this
+            ->client
+            ->request(
+                'GET',
+                'https://oauth.payping.ir/connect/userinfo',
+                [
+                    "headers" => [
+                        "Accept" => "application/json",
+                        "Authorization" => sprintf('Bearer %s', $this->settings->accessToken),
+                    ],
+                    "http_errors" => false,
+                ]
+            );
+
+        $responseBody = mb_strtolower($response->getBody()->getContents());
+        $body = @json_decode($responseBody);
+        $statusCode = (int) $response->getStatusCode();
+
+        if ($statusCode !== 200) {
+            // some error has happened
+            $message = is_array($body) ? array_pop($body) : $this->convertStatusCodeToMessage($statusCode);
+            throw new PurchaseFailedException($message);
+        }
+        return $body;
+    }
+
+    public function call($method, $data = array())
+    {
+        if (method_exists($this, $method))
+        {
+            return $this->$method($data);
+        }
+        return false;
+    }
     /**
      * Purchase Invoice.
      *

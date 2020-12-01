@@ -1,5 +1,5 @@
 {
-    "name": "shetabit/multipay",
+    "name": "mehrdadhosseinzadeh/bdok-multipay",
     "type": "library",
     "description": "PHP Payment Gateway Integration Package",
     "keywords": [
@@ -73,13 +73,13 @@
         "php paypal",
         "paypal"
     ],
-    "homepage": "https://github.com/shetabit/multipay",
+    "homepage": "https://github.com/mehrdadhosseinzadeh/bdok-multipay",
     "license": "MIT",
     "authors": [
         {
-            "name": "Mahdi Khanzadi",
-            "email": "khanzadimahdi@gmail.com",
-            "homepage": "https://github.com/shetabit",
+            "name": "Mehrdad Hosseinzadeh",
+            "email": "mail.hosseinzadeh@gmail.com",
+            "homepage": "https://github.com/mehrdadhosseinzadeh",
             "role": "Developer"
         }
     ],

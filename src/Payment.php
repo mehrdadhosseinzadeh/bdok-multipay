@@ -224,6 +224,12 @@ class Payment
         return $this;
     }
 
+    public function call($method , $data = array())
+    {
+        $this->driverInstance = $this->getFreshDriverInstance();
+        $result = $this->driverInstance->call($method, $data);
+        return $result;
+    }
     /**
      * Pay the purchased invoice.
      *
